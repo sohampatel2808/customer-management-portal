@@ -2,28 +2,34 @@ import click
 from storage import load_data, save_data
 from utility import pluralize
 
-@click.group()
+@click.group(help="Commands for managing customers.")
 def customers():
+    """Customer management commands."""
     pass
 
-@customers.command()
+@customers.command(help="Add a new customer.")
 @click.argument("name", type=str)
 def add(name):
+    """Adds a new customer by name to the database."""
     if not name:
         print("Customer name is required")
         return
 
     data = load_data()
-
     data.setdefault("customers", [])
-    data["customers"].append(name)
+    
+    if name in data["customers"]:
+        print(f"Customer '{name}' already exists.")
+        return
 
+    data["customers"].append(name)
     save_data(data)
 
     print(f"Customer added: {name}")
 
-@customers.command(name='list')
+@customers.command(name='list', help="List all customers.")
 def show():
+    """Shows a list of all saved customers."""
     data = load_data()
     customers = data.get("customers", [])
 
@@ -37,10 +43,15 @@ def show():
     for cust_name in customers:
         print(f"- {cust_name}")
 
-@customers.command()
+@customers.command(help="Show a summary of customer spending and categories.")
 def summary():
+    """Displays a total summary of each customer's spending and order categories."""
     data = load_data()
     orders = data.get("orders", {})
+
+    if not orders:
+        print("No orders found for summary.")
+        return
 
     for cust_name, cust_orders in orders.items():
         categories = {}
@@ -54,9 +65,10 @@ def summary():
         print(f"  - Total Spending: {total_spending}")
         print(f"  - Categories: {categories}")
 
-@customers.command()
+@customers.command(help="Filter customers by a specific product name.")
 @click.argument("product_name", type=str)
 def filter_by_product(product_name):
+    """Finds and lists all customers that have purchased the specified product."""
     data = load_data()
     orders = data.get("orders", {})
 
@@ -67,10 +79,11 @@ def filter_by_product(product_name):
         if product == product_name
     ]
 
-    print(f"Customers who has purchased {product_name}: {customers}")
+    print(f"Customers who have purchased {product_name}: {customers}")
 
-@customers.command()
+@customers.command(help="Group customers into high, moderate, and low spending tiers.")
 def group_by_spending():
+    """Analyzes customer spending and categorizes them into spending tiers."""
     customers_high = []
     customers_moderate = []
     customers_low = []
@@ -93,12 +106,12 @@ def group_by_spending():
     print(f"Moderate: {customers_moderate}")
     print(f"Low: {customers_low}")
 
-@customers.command()
+@customers.command(help="Sort top 3 customers by their total spending.")
 @click.option('--order-by', default='D', help="A for ascending, D for descending")
-def sort_by_spending(order_by):
+def top_by_spending(order_by):
+    """Retrieves the top 3 customers sorted by their lifetime spending."""
     customers = {}
-    customers_sorted = {}
-
+    
     data = load_data()
     orders = data.get("orders", {})
 
@@ -113,9 +126,10 @@ def sort_by_spending(order_by):
 
     print(f"Customers are sorted in {order_by} order by their spending: {top_3}")
 
-@customers.command()
-@click.option('--category-names', default='', help="")
-def order_from_multiple_categories(category_names):
+@customers.command(help="Find customers by multiple purchased categories.")
+@click.option('--category-names', default='', help="Comma separated list of categories to filter by.")
+def filter_by_multiple_categories(category_names):
+    """Finds customers who have placed orders across multiple distinct categories."""
     data = load_data()
     orders = data.get("orders", {})
 
@@ -133,4 +147,5 @@ def order_from_multiple_categories(category_names):
         ) > 1
     ]
 
-    print(f"Customers with more than multiple {categories or 'ALL'}: {customers}")
+    filter_text = f"multiple {categories}" if categories else "ALL Categories"
+    print(f"Customers with orders from {filter_text}: {customers}")

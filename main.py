@@ -3,8 +3,9 @@ from commands.customers import customers
 from commands.orders import orders
 from commands.products import products
 
-@click.group()
+@click.group(help="Main entry point for the CLI tracking system.")
 def cli():
+    """A python CLI project to manage customers, orders, and products."""
     pass
 
 cli.add_command(customers)
